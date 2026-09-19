@@ -39,23 +39,6 @@ flutter build apk --release
 bash build_release.sh "本次更新说明"
 ```
 
-## 🔄 版本发布（自动同步 GitHub）
-
-`build_release.sh` 一条命令完成整个发版闭环：**自增版本号 → 本地构建 APK → 归档 → 更新 CHANGELOG → 提交并推送 main → 打 tag 触发 GitHub Actions 云端构建并发布 Release**。
-
-```bash
-bash build_release.sh "本次更新说明"
-# 脚本会先要求二次确认（y/N）才会创建新版号并同步 GitHub
-# 约 6 分钟后，Releases 页面出现新版 APK
-```
-
-- 发版确认规则：是否创建新版号、是否上传 GitHub 由维护者本人决定，小改动不自动发版
-- 已确认发版时可跳过交互：`ASSUME_YES=1 bash build_release.sh "说明"`
-- 只想本地试构建（不占版本号）：`flutter build apk --release`
-- 也可手动打 tag 触发：`git tag v1.12 && git push origin v1.12`
-
-工作流定义见 [.github/workflows/release.yml](.github/workflows/release.yml)。
-
 ## 🛠 技术栈
 
 Flutter (Material 3) · sqflite（本地存储）· fl_chart（图表）· flutter_local_notifications（提醒）· local_auth（生物识别）· webdav_client（同步）· image / image_picker / photo_view（相册）
