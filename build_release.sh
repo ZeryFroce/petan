@@ -5,16 +5,16 @@
 #       -> 向 README.md 追加一条时间/版本/内容的更新日志
 set -e
 
-PROJECT_DIR="/Users/hyj/WorkBuddy/pet_health_app"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PROJECT_DIR"
 
-# ---- 构建环境（本机专用镜像与 JDK/SDK 路径）----
+# ---- 构建环境（JDK/SDK 路径，可用环境变量覆盖）----
 export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 export PUB_HOSTED_URL=https://pub.flutter-io.cn
-export JAVA_HOME=/opt/homebrew/opt/openjdk@17
+export JAVA_HOME="${JAVA_HOME:-/opt/homebrew/opt/openjdk@17}"
 export PATH="/opt/homebrew/opt/openjdk@17/bin:/opt/homebrew/opt/flutter/bin:$PATH"
-export ANDROID_HOME=/Users/hyj/Library/Android/sdk
-FLUTTER="/opt/homebrew/opt/flutter/bin/flutter"
+export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
+FLUTTER="${FLUTTER:-/opt/homebrew/opt/flutter/bin/flutter}"
 
 # ---- 读取并自增版本号 x.xx ----
 VERSION_FILE="$PROJECT_DIR/.release_version"
