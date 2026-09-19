@@ -34,6 +34,21 @@ NEW=$(printf "%d.%02d" "$MAJOR" "$MINOR")
 PUBVER="${MAJOR}.${MINOR}.0"   # pubspec 需语义化版本，minor 不补零
 CODE=$((MAJOR * 100 + MINOR))  # 单调递增版本号，便于覆盖安装
 
+# ---- 二次确认（规则：是否发版/上传由主人本人决定，小改动不自动发版）----
+# ASSUME_YES=1 可跳过确认（仅在主人明确同意发版后由助手使用）
+if [ "${ASSUME_YES:-0}" != "1" ]; then
+  printf "⚠️  将创建新版号 v%s (versionCode %s) 并同步到 GitHub，是否确认？[y/N] " "$NEW" "$CODE"
+  read -r ANSWER
+  case "$ANSWER" in
+    y|Y|yes|YES) ;;
+    *)
+      echo "已取消发版（版本号未消耗）。"
+      echo "如仅本地试构建不占版本号，可自行运行：flutter build apk --release"
+      exit 0
+      ;;
+  esac
+fi
+
 # ---- 更新 pubspec 版本（versionName = X.Y.0, versionCode = CODE）----
 perl -i -pe "s/^version: .*/version: ${PUBVER}+${CODE}/" "$PROJECT_DIR/pubspec.yaml"
 echo "$NEW" > "$VERSION_FILE"

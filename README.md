@@ -45,10 +45,13 @@ bash build_release.sh "本次更新说明"
 
 ```bash
 bash build_release.sh "本次更新说明"
+# 脚本会先要求二次确认（y/N）才会创建新版号并同步 GitHub
 # 约 6 分钟后，Releases 页面出现新版 APK
 ```
 
-- 只想本地构建、不同步 GitHub：`SKIP_SYNC=1 bash build_release.sh "说明"`
+- 发版确认规则：是否创建新版号、是否上传 GitHub 由维护者本人决定，小改动不自动发版
+- 已确认发版时可跳过交互：`ASSUME_YES=1 bash build_release.sh "说明"`
+- 只想本地试构建（不占版本号）：`flutter build apk --release`
 - 也可手动打 tag 触发：`git tag v1.12 && git push origin v1.12`
 
 工作流定义见 [.github/workflows/release.yml](.github/workflows/release.yml)。
