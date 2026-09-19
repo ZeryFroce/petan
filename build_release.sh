@@ -81,3 +81,29 @@ else
 fi
 
 echo "BUILD_OK $DST"
+
+# ---- 同步到 GitHub（提交版本变更 → 推送 main → 打 tag 触发 Actions 自动发布 Release）----
+# 说明：SKIP_SYNC=1 bash build_release.sh ... 可跳过同步（仅本地构建）
+if [ "${SKIP_SYNC:-0}" = "1" ]; then
+  echo "SYNC_SKIP 已按参数跳过 GitHub 同步"
+else
+  git add CHANGELOG.md pubspec.yaml
+  if ! git diff --cached --quiet; then
+    git commit -q -m "release: v$NEW — $MSG"
+  fi
+  RETRY=0
+  until git push origin main 2>/dev/null; do
+    RETRY=$((RETRY + 1))
+    [ "$RETRY" -ge 3 ] && break
+    sleep 3
+  done
+  if [ "$RETRY" -lt 3 ]; then
+    if git tag -f "v$NEW" main && git push -f origin "v$NEW" 2>/dev/null; then
+      echo "SYNC_OK 已同步 GitHub：main + tag v$NEW，Actions 将自动构建并发布 Release（约 6 分钟）"
+    else
+      echo "SYNC_WARN tag 推送失败，可稍后手动执行：git tag -f v$NEW main && git push -f origin v$NEW"
+    fi
+  else
+    echo "SYNC_WARN main 推送失败，可稍后手动执行：git push origin main && git tag -f v$NEW main && git push -f origin v$NEW"
+  fi
+fi

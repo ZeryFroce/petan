@@ -39,14 +39,17 @@ flutter build apk --release
 bash build_release.sh "本次更新说明"
 ```
 
-## 🔄 自动发布（GitHub Actions）
+## 🔄 版本发布（自动同步 GitHub）
 
-推送到远端后，打 tag 即可自动构建并发布 Release：
+`build_release.sh` 一条命令完成整个发版闭环：**自增版本号 → 本地构建 APK → 归档 → 更新 CHANGELOG → 提交并推送 main → 打 tag 触发 GitHub Actions 云端构建并发布 Release**。
 
 ```bash
-git tag v1.12 && git push origin v1.12
-# Actions 自动完成：flutter build apk → 挂载到 GitHub Release
+bash build_release.sh "本次更新说明"
+# 约 6 分钟后，Releases 页面出现新版 APK
 ```
+
+- 只想本地构建、不同步 GitHub：`SKIP_SYNC=1 bash build_release.sh "说明"`
+- 也可手动打 tag 触发：`git tag v1.12 && git push origin v1.12`
 
 工作流定义见 [.github/workflows/release.yml](.github/workflows/release.yml)。
 
