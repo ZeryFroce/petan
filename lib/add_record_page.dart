@@ -118,7 +118,7 @@ class _AddRecordPageState extends State<AddRecordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('添加记录')),
+      appBar: AppBar(title: Text('添加记录')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -178,7 +178,7 @@ class _AddRecordPageState extends State<AddRecordPage> {
             DropdownButtonFormField<String>(
               value: _groomSub,
               decoration: const InputDecoration(labelText: '清洁类型'),
-              hint: const Text('选择清洁项目'),
+              hint: Text('选择清洁项目'),
               items: kGroomLabels.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value))).toList(),
               onChanged: (v) => setState(() => _groomSub = v),
             ),
@@ -191,7 +191,7 @@ class _AddRecordPageState extends State<AddRecordPage> {
                 labelText: '消耗用品（可选）',
                 helperText: '选择后填写消耗数量，保存时自动扣减用品柜库存',
               ),
-              hint: const Text('不关联用品'),
+              hint: Text('不关联用品'),
               items: [
                 const DropdownMenuItem<Supply?>(
                   value: null,
@@ -223,7 +223,7 @@ class _AddRecordPageState extends State<AddRecordPage> {
           const SizedBox(height: 12),
           TextField(controller: _notes, maxLines: 3, decoration: const InputDecoration(labelText: '备注')),
           const SizedBox(height: 24),
-          SizedBox(width: double.infinity, child: FilledButton(onPressed: _save, child: const Text('保存'))),
+          SizedBox(width: double.infinity, child: FilledButton(onPressed: _save, child: Text('保存'))),
         ],
       ),
     );

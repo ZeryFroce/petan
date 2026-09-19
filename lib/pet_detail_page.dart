@@ -10,6 +10,7 @@ import 'package:photo_view/photo_view.dart';
 import 'database.dart';
 import 'models.dart';
 import 'theme.dart';
+import 'thumbnail_cache.dart';
 import 'add_record_page.dart';
 import 'add_pet_page.dart';
 import 'album_page.dart';
@@ -35,6 +36,7 @@ class _PetDetailPageState extends State<PetDetailPage>
   List<Reminder> _reminders = [];
   List<AlbumEntry> _album = [];
   List<Equipment> _equipments = [];
+  List<SupplyLog> _supplyLogs = []; // 入库/消耗时关联到该宠物的用品流水
   String _typeFilter = 'all';
   String _range = 'month'; // 消费图表：month | year
 
@@ -57,12 +59,14 @@ class _PetDetailPageState extends State<PetDetailPage>
     final reminders = await DatabaseHelper.instance.getReminders(_pet.id);
     final album = await DatabaseHelper.instance.getAlbumEntries(_pet.id);
     final eqs = await DatabaseHelper.instance.getEquipments(_pet.id);
+    final supLogs = await DatabaseHelper.instance.getSupplyLogsForPet(_pet.id);
     if (!mounted) return;
     setState(() {
       _records = records;
       _reminders = reminders;
       _album = album;
       _equipments = eqs;
+      _supplyLogs = supLogs;
     });
   }
 
@@ -78,7 +82,12 @@ class _PetDetailPageState extends State<PetDetailPage>
 
   double get _equipCost => _equipments.fold(0, (s, e) => s + e.price);
 
-  double get _worth => _recordsCost + _equipCost;
+  /// 用品花费：入库时关联到该宠物的金额合计
+  double get _supplyCost => _supplyLogs
+      .where((l) => l.type == 'in')
+      .fold(0, (s, l) => s + (l.price ?? 0));
+
+  double get _worth => _recordsCost + _equipCost + _supplyCost;
 
   HealthScore get _score =>
       computeHealthScore(records: _records, days: 30);
@@ -117,6 +126,46 @@ class _PetDetailPageState extends State<PetDetailPage>
         builder: (_) => AddRecordPage(petId: _pet.id, onSaved: _load),
       ),
     );
+    _load();
+  }
+
+  /// 归档宠物：不再在主流程展示，可随时在「我的-已归档宠物」中恢复
+  Future<void> _archivePet() async {
+    final ok = await showConfirm(
+      context,
+      title: '归档「${_pet.name}」？',
+      content: '归档后该宠物将不再出现在首页、提醒、健康等页面，'
+          '所有数据保留，可在「我的 → 已归档宠物」中恢复。',
+      confirmLabel: '归档',
+    );
+    if (!ok) return;
+    await DatabaseHelper.instance.setPetArchived(_pet.id, 1);
+    if (!mounted) return;
+    Navigator.of(context).pop();
+  }
+
+  /// 清空该宠物的全部业务数据（档案保留），二次确认
+  Future<void> _clearPetData() async {
+    final ok1 = await showConfirm(
+      context,
+      title: '清空「${_pet.name}」的数据？',
+      content: '将删除该宠物的健康记录、提醒、相册、装备与关联的用品流水，'
+          '宠物档案本身保留。此操作不可恢复！',
+      confirmLabel: '下一步',
+    );
+    if (!ok1) return;
+    if (!mounted) return;
+    final ok2 = await showConfirm(
+      context,
+      title: '再次确认',
+      content: '真的要清空「${_pet.name}」的全部数据吗？删除后无法找回。',
+      confirmLabel: '确认清空',
+    );
+    if (!ok2) return;
+    await DatabaseHelper.instance.clearPetData(_pet.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('数据已清空，可重新录入')));
     _load();
   }
 
@@ -174,7 +223,7 @@ class _PetDetailPageState extends State<PetDetailPage>
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(
           AppSpace.lg, AppSpace.md, AppSpace.lg, AppSpace.lg),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.primarySoft,
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(AppRadius.lg)),
       ),
@@ -201,6 +250,23 @@ class _PetDetailPageState extends State<PetDetailPage>
                           icon: const Icon(Icons.edit_outlined, size: 18),
                           color: AppColors.textSub,
                           onPressed: _edit,
+                        ),
+                        PopupMenuButton<String>(
+                          tooltip: '更多操作',
+                          icon: const Icon(Icons.more_horiz, size: 18),
+                          color: AppColors.textSub,
+                          onSelected: (v) {
+                            if (v == 'archive') _archivePet();
+                            if (v == 'clear') _clearPetData();
+                          },
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(
+                                value: 'archive',
+                                child: Text('归档宠物（不再记录）')),
+                            PopupMenuItem(
+                                value: 'clear',
+                                child: Text('清空该宠物的数据')),
+                          ],
                         ),
                       ],
                     ),
@@ -305,7 +371,7 @@ class _PetDetailPageState extends State<PetDetailPage>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('基本档案', style: AppText.h3),
+              Text('基本档案', style: AppText.h3),
               const SizedBox(height: AppSpace.xs),
               InfoRow(label: '物种', value: speciesLabel(_pet.species)),
               InfoRow(
@@ -330,7 +396,7 @@ class _PetDetailPageState extends State<PetDetailPage>
             children: [
               Row(
                 children: [
-                  const Expanded(child: Text('健康评分', style: AppText.h3)),
+                  Expanded(child: Text('健康评分', style: AppText.h3)),
                   StatusChip(
                     text: hs.status,
                     color: _statusColor(hs.status),
@@ -379,7 +445,7 @@ class _PetDetailPageState extends State<PetDetailPage>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('待办提醒', style: AppText.h3),
+              Text('待办提醒', style: AppText.h3),
               const SizedBox(height: AppSpace.xs),
               if (upcoming.isEmpty)
                 Padding(
@@ -487,7 +553,7 @@ class _PetDetailPageState extends State<PetDetailPage>
               Padding(
                 padding: const EdgeInsets.only(right: AppSpace.sm),
                 child: ChoiceChip(
-                  label: const Text('全部'),
+                  label: Text('全部'),
                   selected: _typeFilter == 'all',
                   selectedColor: AppColors.primary,
                   labelStyle: TextStyle(
@@ -516,7 +582,7 @@ class _PetDetailPageState extends State<PetDetailPage>
         ),
         Expanded(
           child: list.isEmpty
-              ? const Center(child: Text('该类型暂无记录', style: AppText.sub))
+              ? Center(child: Text('该类型暂无记录', style: AppText.sub))
               : ListView.builder(
                   padding: const EdgeInsets.fromLTRB(
                       AppSpace.lg, AppSpace.sm, AppSpace.lg, AppSpace.xl),
@@ -583,7 +649,7 @@ class _PetDetailPageState extends State<PetDetailPage>
                 if (r.cost != null && r.cost! > 0) ...[
                   const SizedBox(width: AppSpace.sm),
                   Text('¥${r.cost!.toStringAsFixed(0)}',
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppColors.primaryDark,
                           fontWeight: FontWeight.w600,
                           fontSize: 13)),
@@ -658,7 +724,7 @@ class _PetDetailPageState extends State<PetDetailPage>
                   gridData: FlGridData(
                     show: true,
                     drawVerticalLine: false,
-                    getDrawingHorizontalLine: (v) => const FlLine(
+                    getDrawingHorizontalLine: (v) => FlLine(
                         color: AppColors.divider, strokeWidth: 1),
                   ),
                   borderData: FlBorderData(show: false),
@@ -716,7 +782,7 @@ class _PetDetailPageState extends State<PetDetailPage>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('体重明细', style: AppText.h3),
+              Text('体重明细', style: AppText.h3),
               ...ws.reversed.take(10).map((r) {
                 final idx = ws.indexOf(r);
                 final prev = idx > 0 ? ws[idx - 1].weightKg : null;
@@ -738,7 +804,7 @@ class _PetDetailPageState extends State<PetDetailPage>
                         ),
                       const SizedBox(width: AppSpace.md),
                       Text('${r.weightKg!.toStringAsFixed(1)} kg',
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontWeight: FontWeight.w600,
                               color: AppColors.text)),
                     ],
@@ -786,7 +852,7 @@ class _PetDetailPageState extends State<PetDetailPage>
               TextButton.icon(
                 onPressed: _openMemoryWall,
                 icon: const Icon(Icons.auto_awesome, size: 16),
-                label: const Text('回忆墙'),
+                label: Text('回忆墙'),
               ),
             ],
           ),
@@ -811,15 +877,7 @@ class _PetDetailPageState extends State<PetDetailPage>
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(AppRadius.sm),
-                      child: Image.file(
-                        File(path),
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          color: AppColors.divider,
-                          child: const Icon(Icons.broken_image,
-                              color: AppColors.textFaint),
-                        ),
-                      ),
+                      child: ThumbImage(path),
                     ),
                     if (c.index == 0)
                       Positioned(
@@ -905,6 +963,12 @@ class _PetDetailPageState extends State<PetDetailPage>
       if (!inRange(d)) continue;
       catSums['equipment'] = (catSums['equipment'] ?? 0) + e.price;
     }
+    for (final l in _supplyLogs) {
+      if (l.type != 'in' || l.price == null) continue;
+      final d = DateTime.tryParse(l.date);
+      if (!inRange(d)) continue;
+      catSums['supplies'] = (catSums['supplies'] ?? 0) + l.price!;
+    }
     final rangeTotal = catSums.values.fold(0.0, (s, v) => s + v);
 
     return ListView(
@@ -914,7 +978,7 @@ class _PetDetailPageState extends State<PetDetailPage>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('宠物身价', style: AppText.h3),
+              Text('宠物身价', style: AppText.h3),
               const SizedBox(height: AppSpace.xs),
               Text('为它花的每一笔，都是它的身价',
                   style: AppText.faint),
@@ -923,7 +987,7 @@ class _PetDetailPageState extends State<PetDetailPage>
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text('¥ ${_worth.toStringAsFixed(0)}',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 34,
                           fontWeight: FontWeight.w800,
                           color: AppColors.primaryDark)),
@@ -931,7 +995,7 @@ class _PetDetailPageState extends State<PetDetailPage>
                   Padding(
                     padding: const EdgeInsets.only(bottom: 6),
                     child: Text(
-                        '记录 ¥${_recordsCost.toStringAsFixed(0)} + 装备 ¥${_equipCost.toStringAsFixed(0)}',
+                        '记录 ¥${_recordsCost.toStringAsFixed(0)} + 装备 ¥${_equipCost.toStringAsFixed(0)} + 用品 ¥${_supplyCost.toStringAsFixed(0)}',
                         style: AppText.sub),
                   ),
                 ],
@@ -1096,7 +1160,7 @@ class _PetDetailPageState extends State<PetDetailPage>
                           overflow: TextOverflow.ellipsis),
                     ),
                     Text('¥${e.price.toStringAsFixed(0)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                             color: AppColors.primaryDark,
                             fontWeight: FontWeight.w700)),
                   ],
@@ -1137,7 +1201,7 @@ class _PetDetailPageState extends State<PetDetailPage>
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.card,
       shape: const RoundedRectangleBorder(
         borderRadius:
             BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
@@ -1156,7 +1220,7 @@ class _PetDetailPageState extends State<PetDetailPage>
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text('添加大件装备', style: AppText.h2),
+                  Text('添加大件装备', style: AppText.h2),
                   const SizedBox(height: AppSpace.lg),
                   TextField(
                     controller: nameCtrl,
@@ -1257,7 +1321,7 @@ class _PetDetailPageState extends State<PetDetailPage>
                       if (ctx.mounted) Navigator.pop(ctx);
                       _load();
                     },
-                    child: const Text('保存装备'),
+                    child: Text('保存装备'),
                   ),
                 ],
               );

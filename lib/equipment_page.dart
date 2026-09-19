@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'database.dart';
 import 'models.dart';
 import 'sync_service.dart';
+import 'theme.dart';
 import 'widgets/date_picker_sheet.dart';
 
 class EquipmentPage extends StatefulWidget {
@@ -57,7 +58,7 @@ class _EquipmentPageState extends State<EquipmentPage> {
       context: context,
       builder: (c) => StatefulBuilder(
         builder: (c, setSt) => AlertDialog(
-          title: const Text('添加大件设备'),
+          title: Text('添加大件设备'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -109,7 +110,7 @@ class _EquipmentPageState extends State<EquipmentPage> {
                     child: TextField(
                       controller: TextEditingController(text: date),
                       readOnly: true,
-                      decoration: const InputDecoration(labelText: '购买日期', suffixIcon: Icon(Icons.calendar_today, color: Color(0xFFF5A623))),
+                      decoration: InputDecoration(labelText: '购买日期', suffixIcon: Icon(Icons.calendar_today, color: AppColors.primary)),
                     ),
                   ),
                 ),
@@ -119,7 +120,7 @@ class _EquipmentPageState extends State<EquipmentPage> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(c), child: const Text('取消')),
+            TextButton(onPressed: () => Navigator.pop(c), child: Text('取消')),
             FilledButton(
               onPressed: () async {
                 final name = nameC.text.trim();
@@ -139,7 +140,7 @@ class _EquipmentPageState extends State<EquipmentPage> {
                 SyncService.syncIfAuto();
                 _load();
               },
-              child: const Text('保存'),
+              child: Text('保存'),
             ),
           ],
         ),
@@ -151,7 +152,7 @@ class _EquipmentPageState extends State<EquipmentPage> {
   Widget build(BuildContext context) {
     final total = _map.values.expand((l) => l).fold<double>(0, (s, e) => s + e.price);
     return Scaffold(
-      appBar: AppBar(title: const Text('买买买')),
+      appBar: AppBar(title: Text('买买买')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -163,13 +164,13 @@ class _EquipmentPageState extends State<EquipmentPage> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.diamond, color: Color(0xFFF5A623), size: 36),
+                Icon(Icons.diamond, color: AppColors.primary, size: 36),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('全家宠物身价（装备合计）', style: TextStyle(fontSize: 14, color: Color(0xFF5C4B37))),
+                      Text('全家宠物身价（装备合计）', style: TextStyle(fontSize: 14, color: AppColors.text)),
                       const SizedBox(height: 4),
                       Text('¥${total.toStringAsFixed(0)}', style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Color(0xFFE8854E))),
                     ],
@@ -193,14 +194,14 @@ class _EquipmentPageState extends State<EquipmentPage> {
                   children: [
                     Row(
                       children: [
-                        Text(p.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF5C4B37))),
+                        Text(p.name, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.text)),
                         const Spacer(),
-                        Text('身价 +¥${petWorth(p.id).toStringAsFixed(0)}', style: const TextStyle(color: Color(0xFFF5A623), fontWeight: FontWeight.bold)),
+                        Text('身价 +¥${petWorth(p.id).toStringAsFixed(0)}', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
                       ],
                     ),
                     const SizedBox(height: 12),
                     if (list.isEmpty)
-                      const Text('暂无设备', style: TextStyle(color: Colors.grey, fontSize: 12))
+                      Text('暂无设备', style: TextStyle(color: Colors.grey, fontSize: 12))
                     else
                       ...list.map((e) => Container(
                             margin: const EdgeInsets.only(bottom: 8),
@@ -222,7 +223,7 @@ class _EquipmentPageState extends State<EquipmentPage> {
                                     ],
                                   ),
                                 ),
-                                Text('+¥${e.price.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFF5A623))),
+                                Text('+¥${e.price.toStringAsFixed(0)}', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
                               ],
                             ),
                           )),

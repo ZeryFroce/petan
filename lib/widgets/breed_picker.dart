@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models.dart';
+import '../theme.dart';
 
 /// 品种选择器：内置 10 条主流品种 + 自定义
 Future<String?> showBreedPicker(BuildContext context, String species, String? current) async {
@@ -10,7 +11,7 @@ Future<String?> showBreedPicker(BuildContext context, String species, String? cu
   return showModalBottomSheet<String>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.white,
+    backgroundColor: AppColors.card,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
@@ -33,15 +34,15 @@ Future<String?> showBreedPicker(BuildContext context, String species, String? cu
                     children: [
                       TextButton(
                         onPressed: () => Navigator.pop(c),
-                        child: const Text('取消', style: TextStyle(color: Colors.grey)),
+                        child: Text('取消', style: TextStyle(color: Colors.grey)),
                       ),
-                      const Text('选择品种', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text('选择品种', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                       TextButton(
                         onPressed: () {
                           final custom = customController.text.trim();
                           Navigator.pop(c, custom.isNotEmpty ? custom : selected);
                         },
-                        child: const Text('确定', style: TextStyle(color: Colors.orange)),
+                        child: Text('确定', style: TextStyle(color: Colors.orange)),
                       ),
                     ],
                   ),

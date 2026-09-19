@@ -44,7 +44,7 @@ class _BackupPageState extends State<BackupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('备份与恢复')),
+      appBar: AppBar(title: Text('备份与恢复')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -60,9 +60,9 @@ class _BackupPageState extends State<BackupPage> {
             ),
           ),
           const SizedBox(height: 20),
-          SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: _export, icon: const Icon(Icons.upload), label: const Text('导出备份文件'))),
+          SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: _export, icon: const Icon(Icons.upload), label: Text('导出备份文件'))),
           const SizedBox(height: 12),
-          SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: _import, icon: const Icon(Icons.download), label: const Text('从备份恢复'))),
+          SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: _import, icon: const Icon(Icons.download), label: Text('从备份恢复'))),
           const SizedBox(height: 24),
           if (_msg.isNotEmpty)
             Container(

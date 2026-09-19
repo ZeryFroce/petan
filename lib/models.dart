@@ -10,6 +10,7 @@ class Pet {
   final String? neuter; // neutered | intact | unknown
   final String? avatarPath;
   final String? note;
+  final int archived; // 1 = 已归档（不再在主流程展示，可恢复）
   final int createdAt;
 
   Pet({
@@ -22,6 +23,7 @@ class Pet {
     this.neuter,
     this.avatarPath,
     this.note,
+    this.archived = 0,
     required this.createdAt,
   });
 
@@ -35,6 +37,7 @@ class Pet {
         'neuter': neuter,
         'avatarPath': avatarPath,
         'note': note,
+        'archived': archived,
         'createdAt': createdAt,
       };
 
@@ -48,6 +51,7 @@ class Pet {
         neuter: m['neuter'] as String?,
         avatarPath: m['avatarPath'] as String?,
         note: m['note'] as String?,
+        archived: m['archived'] as int? ?? 0,
         createdAt: m['createdAt'] as int,
       );
 
@@ -384,6 +388,7 @@ const kCategoryLabels = {
   'medical': '医疗',
   'feed': '喂食',
   'equipment': '装备',
+  'supplies': '用品',
   'groom': '清洁',
   'other': '其他',
 };
@@ -491,6 +496,7 @@ const kSupplyCategories = {
   'snack': '零食',
   'food': '主粮',
   'care': '清洁护理',
+  'device': '设备',
   'other': '其他',
 };
 
@@ -500,6 +506,7 @@ const kSupplyCategoryEmojis = {
   'snack': '🍪',
   'food': '🥣',
   'care': '🧴',
+  'device': '🤖',
   'other': '📦',
 };
 
@@ -509,6 +516,7 @@ String supplyCategoryLabel(String c) => kSupplyCategories[c] ?? c;
 String supplyCategoryEmoji(String c) => kSupplyCategoryEmojis[c] ?? '📦';
 
 /// 用品：quantity 为当前库存，入库累加、消耗扣减
+/// [petId] 为归属宠物（null = 公共用品），入库/消耗可进一步在流水上关联宠物
 class Supply {
   final String id;
   final String name;
@@ -517,6 +525,7 @@ class Supply {
   final String unit; // kSupplyUnits 之一
   final String? dosageNote; // 使用剂量说明
   final String? note;
+  final String? petId; // 归属宠物，null = 公共
   final int createdAt;
 
   Supply({
@@ -527,6 +536,7 @@ class Supply {
     this.unit = '袋',
     this.dosageNote,
     this.note,
+    this.petId,
     required this.createdAt,
   });
 
@@ -538,6 +548,7 @@ class Supply {
         'unit': unit,
         'dosageNote': dosageNote,
         'note': note,
+        'petId': petId,
         'createdAt': createdAt,
       };
 
@@ -549,6 +560,7 @@ class Supply {
         unit: m['unit'] as String? ?? '袋',
         dosageNote: m['dosageNote'] as String?,
         note: m['note'] as String?,
+        petId: m['petId'] as String?,
         createdAt: m['createdAt'] as int? ?? 0,
       );
 }
@@ -567,6 +579,7 @@ class SupplyLog {
   final String? expiryDate; // 入库：保质期至
   final String? note; // 备注 / 使用剂量说明
   final String? recordId; // 消耗关联的健康记录
+  final String? petId; // 本次出入库关联的宠物（计入其身价）
   final int createdAt;
 
   SupplyLog({
@@ -581,6 +594,7 @@ class SupplyLog {
     this.expiryDate,
     this.note,
     this.recordId,
+    this.petId,
     required this.createdAt,
   });
 
@@ -596,6 +610,7 @@ class SupplyLog {
         'expiryDate': expiryDate,
         'note': note,
         'recordId': recordId,
+        'petId': petId,
         'createdAt': createdAt,
       };
 
@@ -611,6 +626,7 @@ class SupplyLog {
         expiryDate: m['expiryDate'] as String?,
         note: m['note'] as String?,
         recordId: m['recordId'] as String?,
+        petId: m['petId'] as String?,
         createdAt: m['createdAt'] as int? ?? 0,
       );
 }

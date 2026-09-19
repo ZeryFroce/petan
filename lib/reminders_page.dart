@@ -88,7 +88,7 @@ class RemindersPageState extends State<RemindersPage> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('提醒', style: AppText.h1),
+            Text('提醒', style: AppText.h1),
             const SizedBox(height: 2),
             Text(
               '${overdue.length + today.length} 项待处理 · 共 ${_all.length} 条',
@@ -133,7 +133,7 @@ class RemindersPageState extends State<RemindersPage> {
                         const SizedBox(height: AppSpace.lg),
                         Row(
                           children: [
-                            const Expanded(child: Text('已完成', style: AppText.h3)),
+                            Expanded(child: Text('已完成', style: AppText.h3)),
                             TextButton(
                               onPressed: () => setState(() => _showDone = !_showDone),
                               child: Text(_showDone ? '隐藏' : '显示 (${done.length})'),
@@ -143,7 +143,7 @@ class RemindersPageState extends State<RemindersPage> {
                         if (_showDone) ...[
                           const SizedBox(height: AppSpace.md),
                           if (done.isEmpty)
-                            const AppCard(
+                            AppCard(
                               child: Padding(
                                 padding: EdgeInsets.symmetric(vertical: AppSpace.xl),
                                 child: Center(child: Text('暂无已完成提醒', style: AppText.sub)),
@@ -158,7 +158,7 @@ class RemindersPageState extends State<RemindersPage> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _add,
         icon: const Icon(Icons.add),
-        label: const Text('添加提醒'),
+        label: Text('添加提醒'),
       ),
     );
   }

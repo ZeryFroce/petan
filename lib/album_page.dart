@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:photo_view/photo_view.dart';
 import 'database.dart';
 import 'models.dart';
+import 'thumbnail_cache.dart';
 
 class AlbumPage extends StatefulWidget {
   final Pet pet;
@@ -81,7 +82,7 @@ class _AlbumPageState extends State<AlbumPage> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _addToday,
         icon: const Icon(Icons.add_photo_alternate),
-        label: const Text('记录今天'),
+        label: Text('记录今天'),
       ),
     );
   }
@@ -92,9 +93,9 @@ class _AlbumPageState extends State<AlbumPage> {
           children: [
             Text('📷', style: TextStyle(fontSize: 64, color: Colors.orange.shade200)),
             const SizedBox(height: 16),
-            const Text('还没有照片记录', style: TextStyle(color: Colors.grey)),
+            Text('还没有照片记录', style: TextStyle(color: Colors.grey)),
             const SizedBox(height: 8),
-            const Text('每天最多记录 1 次，最多 9 张照片', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            Text('每天最多记录 1 次，最多 9 张照片', style: TextStyle(color: Colors.grey, fontSize: 12)),
           ],
         ),
       );
@@ -146,11 +147,7 @@ class _AlbumPageState extends State<AlbumPage> {
                   tag: '${e.id}_$idx',
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: Image.file(
-                      File(photos[idx]),
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade200, child: const Icon(Icons.broken_image)),
-                    ),
+                    child: ThumbImage(photos[idx]),
                   ),
                 ),
               ),
@@ -334,8 +331,8 @@ class _AlbumEditPageState extends State<AlbumEditPage> {
             ),
           if (!_canEdit) const SizedBox(height: 12),
           SwitchListTile(
-            title: const Text('压缩图片'),
-            subtitle: const Text('节省空间，推荐开启'),
+            title: Text('压缩图片'),
+            subtitle: Text('节省空间，推荐开启'),
             value: _compress,
             onChanged: _canEdit ? (v) => setState(() => _compress = v) : null,
           ),
@@ -351,7 +348,7 @@ class _AlbumEditPageState extends State<AlbumEditPage> {
             ),
           ),
           const SizedBox(height: 16),
-          const Text('照片（最多 9 张）', style: TextStyle(fontWeight: FontWeight.bold)),
+          Text('照片（最多 9 张）', style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           GridView.builder(
             shrinkWrap: true,
@@ -485,7 +482,7 @@ class MemoryWallPage extends StatelessWidget {
                           itemCount: e.photos.length,
                           itemBuilder: (_, idx) => ClipRRect(
                             borderRadius: BorderRadius.circular(10),
-                            child: Image.file(File(e.photos[idx]), fit: BoxFit.cover),
+                            child: ThumbImage(e.photos[idx]),
                           ),
                         ),
                         if (e.note != null && e.note!.isNotEmpty) ...[

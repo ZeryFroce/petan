@@ -106,7 +106,7 @@ class HealthPageState extends State<HealthPage> {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
@@ -136,7 +136,7 @@ class HealthPageState extends State<HealthPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('评分规则管理', style: AppText.h2),
+                                Text('评分规则管理', style: AppText.h2),
                                 const SizedBox(height: 2),
                                 Text('规则即改即生效，评分实时重算', style: AppText.faint),
                               ],
@@ -149,7 +149,7 @@ class HealthPageState extends State<HealthPage> {
                               setSheet(() {});
                             },
                             icon: const Icon(Icons.playlist_add, size: 18),
-                            label: const Text('添加'),
+                            label: Text('添加'),
                             style: FilledButton.styleFrom(
                               minimumSize: const Size(0, 40),
                               padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -161,7 +161,7 @@ class HealthPageState extends State<HealthPage> {
                     const Divider(height: 1),
                     Expanded(
                       child: _rules.isEmpty
-                          ? const Center(
+                          ? Center(
                               child: Text('暂无规则，点击「添加」使用预设模板',
                                   style: AppText.sub))
                           : ListView.builder(
@@ -272,7 +272,7 @@ class HealthPageState extends State<HealthPage> {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
@@ -302,7 +302,7 @@ class HealthPageState extends State<HealthPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('添加评分规则', style: AppText.h2),
+                          Text('添加评分规则', style: AppText.h2),
                           const SizedBox(height: 2),
                           Text('以下为建议值，添加后可继续调整分值与周期',
                               style: AppText.faint),
@@ -317,11 +317,11 @@ class HealthPageState extends State<HealthPage> {
                         children: [
                           ListTile(
                             leading:
-                                const Text('⭐', style: TextStyle(fontSize: 22)),
-                            title: const Text('自定义规则', style: AppText.h3),
-                            subtitle: const Text('完全自定义名称、分值、周期与匹配方式',
+                                Text('⭐', style: TextStyle(fontSize: 22)),
+                            title: Text('自定义规则', style: AppText.h3),
+                            subtitle: Text('完全自定义名称、分值、周期与匹配方式',
                                 style: AppText.faint),
-                            trailing: const Icon(Icons.chevron_right,
+                            trailing: Icon(Icons.chevron_right,
                                 color: AppColors.textFaint),
                             onTap: () async {
                               Navigator.pop(ctx);
@@ -345,9 +345,9 @@ class HealthPageState extends State<HealthPage> {
                                 title: Text(r.name, style: AppText.body),
                                 subtitle: Text(desc(r), style: AppText.faint),
                                 trailing: duplicated
-                                    ? const StatusChip(
+                                    ? StatusChip(
                                         text: '已添加', color: AppColors.done)
-                                    : const Icon(Icons.add_circle_outline,
+                                    : Icon(Icons.add_circle_outline,
                                         color: AppColors.primary),
                                 onTap: duplicated
                                     ? null
@@ -396,7 +396,7 @@ class HealthPageState extends State<HealthPage> {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
@@ -574,7 +574,7 @@ class HealthPageState extends State<HealthPage> {
                     const SizedBox(height: AppSpace.md),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('启用该规则', style: AppText.body),
+                      title: Text('启用该规则', style: AppText.body),
                       value: enabled,
                       activeThumbColor: AppColors.primary,
                       onChanged: (v) => setLocal(() => enabled = v),
@@ -644,7 +644,7 @@ class HealthPageState extends State<HealthPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('健康', style: AppText.h1),
+            Text('健康', style: AppText.h1),
             const SizedBox(height: 2),
             Text(
               '基础分 10 · ${_rules.where((r) => r.enabled == 1).length} 条规则动态加减 · 点击规则卡查看计算方式',
@@ -709,7 +709,7 @@ class HealthPageState extends State<HealthPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('计算方式', style: AppText.h3),
+          Text('计算方式', style: AppText.h3),
           const SizedBox(height: AppSpace.sm),
           Text(
             '健康分 = 基础分 10 + 各规则加减分（限 0~10 分）。'
@@ -784,7 +784,7 @@ class HealthPageState extends State<HealthPage> {
                                 fontWeight: FontWeight.w700,
                                 color: color),
                           ),
-                          const Text('/10', style: AppText.faint),
+                          Text('/10', style: AppText.faint),
                         ],
                       ),
                     ],
@@ -820,7 +820,7 @@ class HealthPageState extends State<HealthPage> {
             const Divider(height: 1),
             const SizedBox(height: AppSpace.md),
             if (contributions.isEmpty)
-              const Text('暂无生效的加减分项', style: AppText.faint)
+              Text('暂无生效的加减分项', style: AppText.faint)
             else
               Wrap(
                 spacing: 5,
@@ -875,10 +875,12 @@ class HealthPageState extends State<HealthPage> {
             ),
           if (_pets.length > 1) const SizedBox(height: AppSpace.md),
           if (list.length < 2)
-            EmptyState(
-              emoji: '⚖️',
-              title: '体重数据不足',
-              subtitle: '至少记录 2 次体重才能绘制趋势曲线',
+            const Center(
+              child: EmptyState(
+                emoji: '⚖️',
+                title: '体重数据不足',
+                subtitle: '至少记录 2 次体重才能绘制趋势曲线',
+              ),
             )
           else ...[
             SizedBox(height: 200, child: _chart(list)),
@@ -936,7 +938,7 @@ class HealthPageState extends State<HealthPage> {
           show: true,
           drawVerticalLine: false,
           horizontalInterval: (hi - lo + pad * 2) / 4,
-          getDrawingHorizontalLine: (v) => const FlLine(color: AppColors.divider, strokeWidth: 1),
+          getDrawingHorizontalLine: (v) => FlLine(color: AppColors.divider, strokeWidth: 1),
         ),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
@@ -948,7 +950,7 @@ class HealthPageState extends State<HealthPage> {
               reservedSize: 38,
               getTitlesWidget: (v, meta) => Text(
                 v.toStringAsFixed(1),
-                style: const TextStyle(fontSize: 10, color: AppColors.textFaint),
+                style: TextStyle(fontSize: 10, color: AppColors.textFaint),
               ),
             ),
           ),
@@ -964,7 +966,7 @@ class HealthPageState extends State<HealthPage> {
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(
                     list[i].recordDate.substring(5),
-                    style: const TextStyle(fontSize: 10, color: AppColors.textFaint),
+                    style: TextStyle(fontSize: 10, color: AppColors.textFaint),
                   ),
                 );
               },

@@ -74,8 +74,9 @@ class AppCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: color ?? AppColors.card,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        boxShadow: const [
-          BoxShadow(color: Color(0x0F5C4B37), blurRadius: 14, offset: Offset(0, 4)),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(color: AppColors.shadow, blurRadius: 14, offset: const Offset(0, 4)),
         ],
       ),
       child: Material(
@@ -185,7 +186,7 @@ class PetAvatar extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: const BoxDecoration(color: AppColors.primarySoft, shape: BoxShape.circle),
+      decoration: BoxDecoration(color: AppColors.primarySoft, shape: BoxShape.circle),
       child: Center(
         child: Text(speciesEmoji(pet.species), style: TextStyle(fontSize: size * 0.55)),
       ),
@@ -305,7 +306,7 @@ Future<bool> showConfirm(
       title: Text(title),
       content: content == null ? null : Text(content),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('取消')),
         FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(confirmLabel)),
       ],
     ),

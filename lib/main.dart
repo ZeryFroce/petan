@@ -14,6 +14,8 @@ void main() async {
   final s = await DatabaseHelper.instance.getSettings();
   final lockOn = s?.lockEnabled == 1 && (s?.lockPin?.isNotEmpty ?? false);
   final bioOn = s?.bioEnabled == 1;
+  // 启动时恢复上次选择的主题（默认暖橙）
+  setAppTheme(s?.theme ?? 'light');
   runApp(AppRoot(lockOn: lockOn, bioOn: bioOn, pin: s?.lockPin));
 }
 
@@ -55,13 +57,16 @@ class _AppRootState extends State<AppRoot> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: '宠安',
-      debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(),
-      home: _locked
-          ? LockPage(pin: widget.pin!, bioOn: widget.bioOn, onUnlock: _unlock)
-          : const MainShell(),
+    return ValueListenableBuilder<String>(
+      valueListenable: appThemeId,
+      builder: (context, _, __) => MaterialApp(
+        title: '宠安',
+        debugShowCheckedModeBanner: false,
+        theme: buildAppTheme(),
+        home: _locked
+            ? LockPage(pin: widget.pin!, bioOn: widget.bioOn, onUnlock: _unlock)
+            : const MainShell(),
+      ),
     );
   }
 }
@@ -147,16 +152,16 @@ class _LockPageState extends State<LockPage> {
             children: [
               Container(
                 padding: const EdgeInsets.all(20),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.primarySoft,
                   shape: BoxShape.circle,
                 ),
-                child: const Text('🐾', style: TextStyle(fontSize: 52)),
+                child: Text('🐾', style: TextStyle(fontSize: 52)),
               ),
               const SizedBox(height: 24),
-              const Text('宠安', style: AppText.h1),
+              Text('宠安', style: AppText.h1),
               const SizedBox(height: 6),
-              const Text('请输入密码解锁', style: AppText.sub),
+              Text('请输入密码解锁', style: AppText.sub),
               const SizedBox(height: 28),
               TextField(
                 controller: _c,
@@ -175,14 +180,14 @@ class _LockPageState extends State<LockPage> {
               const SizedBox(height: 18),
               SizedBox(
                 width: double.infinity,
-                child: FilledButton(onPressed: _check, child: const Text('解锁')),
+                child: FilledButton(onPressed: _check, child: Text('解锁')),
               ),
               if (widget.bioOn) ...[
                 const SizedBox(height: 12),
                 TextButton.icon(
                   onPressed: _tryBio,
-                  icon: const Icon(Icons.fingerprint, color: AppColors.primary),
-                  label: const Text(
+                  icon: Icon(Icons.fingerprint, color: AppColors.primary),
+                  label: Text(
                     '指纹 / 面容解锁',
                     style: TextStyle(color: AppColors.primary),
                   ),

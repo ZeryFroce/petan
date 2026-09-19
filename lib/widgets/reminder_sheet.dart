@@ -37,7 +37,7 @@ Future<void> showAddReminderSheet(
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.white,
+    backgroundColor: AppColors.card,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
     ),
@@ -55,7 +55,7 @@ Future<void> showAddReminderSheet(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text('添加提醒', style: AppText.h2),
+                Text('添加提醒', style: AppText.h2),
                 const SizedBox(height: AppSpace.lg),
                 if (pet == null)
                   DropdownButtonFormField<Pet>(
@@ -126,7 +126,7 @@ Future<void> showAddReminderSheet(
                     if (ctx.mounted) Navigator.pop(ctx);
                     onSaved();
                   },
-                  child: const Text('保存提醒'),
+                  child: Text('保存提醒'),
                 ),
               ],
             );

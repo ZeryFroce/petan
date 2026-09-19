@@ -55,12 +55,12 @@ class _AddPetPageState extends State<AddPetPage> {
           children: [
             ListTile(
               leading: const Icon(Icons.camera_alt, color: Colors.orange),
-              title: const Text('拍照'),
+              title: Text('拍照'),
               onTap: () => Navigator.pop(c, ImageSource.camera),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library, color: Colors.orange),
-              title: const Text('从相册选择'),
+              title: Text('从相册选择'),
               onTap: () => Navigator.pop(c, ImageSource.gallery),
             ),
           ],
@@ -155,11 +155,11 @@ class _AddPetPageState extends State<AddPetPage> {
               children: [
                 Text('🐱', style: TextStyle(fontSize: 20, color: _species == 'cat' ? Colors.orange : Colors.grey)),
                 Radio<String>(value: 'cat', groupValue: _species, onChanged: (v) => setState(() => _species = v!), activeColor: const Color(0xFFF5A623)),
-                const Text('猫咪'),
+                Text('猫咪'),
                 const SizedBox(width: 16),
                 Text('🐶', style: TextStyle(fontSize: 20, color: _species == 'dog' ? Colors.orange : Colors.grey)),
                 Radio<String>(value: 'dog', groupValue: _species, onChanged: (v) => setState(() => _species = v!), activeColor: const Color(0xFFF5A623)),
-                const Text('狗狗'),
+                Text('狗狗'),
               ],
             ),
           ),
@@ -218,7 +218,7 @@ class _AddPetPageState extends State<AddPetPage> {
           const SizedBox(height: 12),
           TextField(controller: _note, maxLines: 3, decoration: const InputDecoration(labelText: '备注')),
           const SizedBox(height: 24),
-          SizedBox(width: double.infinity, child: FilledButton(onPressed: _save, child: const Text('保存'))),
+          SizedBox(width: double.infinity, child: FilledButton(onPressed: _save, child: Text('保存'))),
         ],
       ),
     );

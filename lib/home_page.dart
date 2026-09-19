@@ -176,7 +176,7 @@ class HomePageState extends State<HomePage> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showQuickActions,
         icon: const Icon(Icons.add),
-        label: const Text('快速记录'),
+        label: Text('快速记录'),
       ),
     );
   }
@@ -200,7 +200,7 @@ class HomePageState extends State<HomePage> {
                   style: AppText.h3,
                 ),
               ),
-              TextButton(onPressed: widget.onViewReminders, child: const Text('查看全部')),
+              TextButton(onPressed: widget.onViewReminders, child: Text('查看全部')),
             ],
           ),
           const SizedBox(height: AppSpace.md),
@@ -262,7 +262,7 @@ class HomePageState extends State<HomePage> {
             ),
             child: Text(
               '共 ${_pets.length} 只',
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.primaryDark,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -336,7 +336,7 @@ class HomePageState extends State<HomePage> {
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, color: AppColors.textFaint),
+          Icon(Icons.chevron_right, color: AppColors.textFaint),
         ],
       ),
     );
@@ -367,7 +367,7 @@ class HomePageState extends State<HomePage> {
                   child: const Center(child: Text('📦', style: TextStyle(fontSize: 22))),
                 ),
                 const SizedBox(width: AppSpace.md),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -377,7 +377,7 @@ class HomePageState extends State<HomePage> {
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right, color: AppColors.textFaint),
+                Icon(Icons.chevron_right, color: AppColors.textFaint),
               ],
             ),
           )
@@ -539,7 +539,7 @@ class HomePageState extends State<HomePage> {
   void _showQuickActions() {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
@@ -548,40 +548,40 @@ class HomePageState extends State<HomePage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.pets, color: AppColors.primary),
-              title: const Text('添加宠物'),
+              leading: Icon(Icons.pets, color: AppColors.primary),
+              title: Text('添加宠物'),
               onTap: () {
                 Navigator.pop(ctx);
                 _addPet();
               },
             ),
             ListTile(
-              leading: const Icon(Icons.note_add_outlined, color: AppColors.primary),
-              title: const Text('记一笔健康'),
+              leading: Icon(Icons.note_add_outlined, color: AppColors.primary),
+              title: Text('记一笔健康'),
               onTap: () {
                 Navigator.pop(ctx);
                 _withPet((p) => AddRecordPage(petId: p.id, onSaved: refresh));
               },
             ),
             ListTile(
-              leading: const Icon(Icons.monitor_weight_outlined, color: AppColors.primary),
-              title: const Text('记体重'),
+              leading: Icon(Icons.monitor_weight_outlined, color: AppColors.primary),
+              title: Text('记体重'),
               onTap: () {
                 Navigator.pop(ctx);
                 _withPet((p) => AddRecordPage(petId: p.id, onSaved: refresh, initialType: 'weight'));
               },
             ),
             ListTile(
-              leading: const Icon(Icons.alarm_add, color: AppColors.primary),
-              title: const Text('添加提醒'),
+              leading: Icon(Icons.alarm_add, color: AppColors.primary),
+              title: Text('添加提醒'),
               onTap: () {
                 Navigator.pop(ctx);
                 showAddReminderSheet(context, pets: _pets, onSaved: refresh);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.inventory_2_outlined, color: AppColors.primary),
-              title: const Text('用品柜 · 入库 / 消耗'),
+              leading: Icon(Icons.inventory_2_outlined, color: AppColors.primary),
+              title: Text('用品柜 · 入库 / 消耗'),
               onTap: () {
                 Navigator.pop(ctx);
                 _openSupplies();
@@ -611,7 +611,7 @@ class HomePageState extends State<HomePage> {
     }
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
@@ -619,7 +619,7 @@ class HomePageState extends State<HomePage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Padding(
+            Padding(
               padding: EdgeInsets.all(AppSpace.lg),
               child: Align(
                 alignment: Alignment.centerLeft,

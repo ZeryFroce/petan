@@ -19,7 +19,7 @@ class DatabaseHelper {
     final path = join(dir, 'pet_health.db');
     return openDatabase(
       path,
-      version: 6,
+      version: 7,
       onCreate: (db, version) async {
         await _createTables(db);
         await db.insert('settings', {'id': 1, 'lockEnabled': 0, 'bioEnabled': 0});
@@ -47,6 +47,11 @@ class DatabaseHelper {
           await _createScoringRuleTable(db);
           await _seedDefaultRules(db);
         }
+        if (oldVersion < 7) {
+          await db.execute('ALTER TABLE pets ADD COLUMN archived INTEGER DEFAULT 0');
+          await db.execute('ALTER TABLE supplies ADD COLUMN petId TEXT');
+          await db.execute('ALTER TABLE supply_logs ADD COLUMN petId TEXT');
+        }
       },
     );
   }
@@ -63,6 +68,7 @@ class DatabaseHelper {
         neuter TEXT,
         avatarPath TEXT,
         note TEXT,
+        archived INTEGER DEFAULT 0,
         createdAt INTEGER
       )
     ''');
@@ -186,6 +192,7 @@ class DatabaseHelper {
         unit TEXT DEFAULT '袋',
         dosageNote TEXT,
         note TEXT,
+        petId TEXT,
         createdAt INTEGER
       )
     ''');
@@ -202,6 +209,7 @@ class DatabaseHelper {
         expiryDate TEXT,
         note TEXT,
         recordId TEXT,
+        petId TEXT,
         createdAt INTEGER
       )
     ''');
@@ -209,11 +217,51 @@ class DatabaseHelper {
 
   // Pet
   Future<int> insertPet(Pet p) => database.then((d) => d.insert('pets', p.toMap()));
-  Future<List<Pet>> getPets() async {
+
+  /// 默认只返回未归档宠物；[includeArchived] = true 时返回全部
+  Future<List<Pet>> getPets({bool includeArchived = false}) async {
     final d = await database;
-    final rows = await d.query('pets', orderBy: 'createdAt DESC');
+    final rows = await d.query('pets',
+        where: includeArchived ? null : 'archived=0',
+        orderBy: 'createdAt DESC');
     return rows.map(Pet.fromMap).toList();
   }
+
+  /// 已归档宠物列表
+  Future<List<Pet>> getArchivedPets() async {
+    final d = await database;
+    final rows = await d.query('pets', where: 'archived=1', orderBy: 'createdAt DESC');
+    return rows.map(Pet.fromMap).toList();
+  }
+
+  Future<int> setPetArchived(String id, int archived) =>
+      database.then((d) => d.update('pets', {'archived': archived},
+          where: 'id=?', whereArgs: [id]));
+
+  /// 清空某宠物的全部业务数据（档案本身保留），用于重新录入。
+  /// 返回删除的记录条数。
+  Future<int> clearPetData(String petId) async {
+    final d = await database;
+    int n = 0;
+    await d.transaction((txn) async {
+      n += await txn.delete('records', where: 'petId=?', whereArgs: [petId]);
+      n += await txn.delete('reminders', where: 'petId=?', whereArgs: [petId]);
+      n += await txn.delete('album', where: 'petId=?', whereArgs: [petId]);
+      n += await txn.delete('equipments', where: 'petId=?', whereArgs: [petId]);
+      n += await txn.delete('supply_logs', where: 'petId=?', whereArgs: [petId]);
+      n += await txn.delete('scoring_rules', where: 'petId=?', whereArgs: [petId]);
+      // 该宠物专属（有归属）的用品一并清除；公共用品保留
+      final own = await txn.query('supplies',
+          columns: ['id'], where: 'petId=?', whereArgs: [petId]);
+      for (final row in own) {
+        final sid = row['id'] as String;
+        n += await txn.delete('supply_logs', where: 'supplyId=?', whereArgs: [sid]);
+        n += await txn.delete('supplies', where: 'id=?', whereArgs: [sid]);
+      }
+    });
+    return n;
+  }
+
   Future<Pet?> getPet(String id) async {
     final d = await database;
     final rows = await d.query('pets', where: 'id=?', whereArgs: [id]);
@@ -279,8 +327,9 @@ class DatabaseHelper {
   }
 
   /// 消耗：写流水 + 库存扣减（事务，库存不足时按剩余量扣）
+  /// [petId] 可选：本次消耗关联的宠物
   Future<void> consumeSupply(String supplyId, double qty,
-      {String? recordId, String? date, String? note}) async {
+      {String? recordId, String? date, String? note, String? petId}) async {
     final d = await database;
     await d.transaction((txn) async {
       final rows = await txn.query('supplies', where: 'id=?', whereArgs: [supplyId]);
@@ -296,6 +345,7 @@ class DatabaseHelper {
         date: date ?? DateTime.now().toIso8601String().substring(0, 10),
         note: note,
         recordId: recordId,
+        petId: petId,
         createdAt: DateTime.now().millisecondsSinceEpoch,
       ).toMap());
       await txn.rawUpdate(
@@ -314,6 +364,14 @@ class DatabaseHelper {
   Future<List<SupplyLog>> getAllSupplyLogs() async {
     final d = await database;
     final rows = await d.query('supply_logs', orderBy: 'date DESC, createdAt DESC');
+    return rows.map(SupplyLog.fromMap).toList();
+  }
+
+  /// 某宠物关联的全部用品流水（入库/消耗时选择的宠物），用于身价与消费统计
+  Future<List<SupplyLog>> getSupplyLogsForPet(String petId) async {
+    final d = await database;
+    final rows = await d.query('supply_logs',
+        where: 'petId=?', whereArgs: [petId], orderBy: 'date DESC, createdAt DESC');
     return rows.map(SupplyLog.fromMap).toList();
   }
 
@@ -433,7 +491,7 @@ class DatabaseHelper {
     final ruleRows = await getScoringRules();
     return {
       'app': 'pet_health_app',
-      'version': 4,
+      'version': 5,
       'exportedAt': DateTime.now().toIso8601String(),
       'pets': pets.map((e) => e.toMap()).toList(),
       'records': recs.map((e) => e.toMap()).toList(),

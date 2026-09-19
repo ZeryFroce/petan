@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import '../theme.dart';
 
 /// 底部弹出滚动式年月日选择器
 Future<String?> showScrollDatePicker(
@@ -31,7 +32,7 @@ Future<String?> showScrollDatePicker(
   return showModalBottomSheet<String>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.white,
+    backgroundColor: AppColors.card,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
@@ -52,7 +53,7 @@ Future<String?> showScrollDatePicker(
                   children: [
                     TextButton(
                       onPressed: () => Navigator.pop(c),
-                      child: const Text('取消', style: TextStyle(color: Colors.grey)),
+                      child: Text('取消', style: TextStyle(color: Colors.grey)),
                     ),
                     Text(
                       '${selected.year}年${selected.month}月${selected.day}日',
@@ -60,7 +61,7 @@ Future<String?> showScrollDatePicker(
                     ),
                     TextButton(
                       onPressed: () => Navigator.pop(c, selected.toIso8601String().substring(0, 10)),
-                      child: const Text('确定', style: TextStyle(color: Colors.orange)),
+                      child: Text('确定', style: TextStyle(color: Colors.orange)),
                     ),
                   ],
                 ),
@@ -72,7 +73,7 @@ Future<String?> showScrollDatePicker(
                   minimumDate: first,
                   maximumDate: last,
                   dateOrder: DatePickerDateOrder.ymd,
-                  backgroundColor: Colors.white,
+                  backgroundColor: AppColors.card,
                   onDateTimeChanged: (d) => setSt(() => selected = d),
                 ),
               ),
