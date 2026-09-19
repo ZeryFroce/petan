@@ -37,6 +37,7 @@ class _SuppliesPageState extends State<SuppliesPage> {
   List<Supply> _supplies = [];
   Map<String, List<SupplyLog>> _logs = {}; // supplyId -> logs
   String _filter = 'all';
+  String _view = 'stock'; // stock = 在柜（有库存） | used = 已消耗
 
   @override
   void initState() {
@@ -168,34 +169,22 @@ class _SuppliesPageState extends State<SuppliesPage> {
     _load();
   }
 
-  /// 复制单个物品：快速生成一批同名新库存（不含流水）
+  /// 复制单个物品：打开预填表单，确认后生成新库存
   Future<void> _duplicate(Supply s) async {
-    await DatabaseHelper.instance.insertSupply(Supply(
-      id: genId(),
-      name: s.name,
-      category: s.category,
-      quantity: 0,
-      unit: s.unit,
-      dosageNote: s.dosageNote,
-      note: s.note,
-      petId: s.petId,
-      createdAt: DateTime.now().millisecondsSinceEpoch,
-    ));
-    await _load();
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('已复制「${s.name}」，点「入库」补充新一批库存')));
-    }
+    await _showSupplyForm(template: s);
+    _load();
   }
 
-  /// 新建 / 编辑用品基础信息；新建时可同时完成首次入库
-  Future<void> _showSupplyForm({Supply? edit}) async {
-    final nameCtrl = TextEditingController(text: edit?.name);
-    final dosageCtrl = TextEditingController(text: edit?.dosageNote);
-    final noteCtrl = TextEditingController(text: edit?.note);
-    String category = edit?.category ?? 'other';
-    String unit = edit?.unit ?? '袋';
-    String? petId = edit?.petId;
+  /// 新建 / 编辑用品基础信息；新建时可同时完成首次入库。
+  /// [template] 非空时为「复制」：预填该物品信息，由主人确认后保存。
+  Future<void> _showSupplyForm({Supply? edit, Supply? template}) async {
+    final src = edit ?? template;
+    final nameCtrl = TextEditingController(text: src?.name);
+    final dosageCtrl = TextEditingController(text: src?.dosageNote);
+    final noteCtrl = TextEditingController(text: src?.note);
+    String category = src?.category ?? 'other';
+    String unit = src?.unit ?? '袋';
+    String? petId = src?.petId;
 
     // 首次入库信息（仅新建时）
     final qtyCtrl = TextEditingController();
@@ -1025,7 +1014,11 @@ class _SuppliesPageState extends State<SuppliesPage> {
     final filteredItems = _filter == 'all'
         ? _supplies
         : _supplies.where((s) => s.category == _filter).toList();
-    final groups = groupsOf(filteredItems);
+    final allGroups = groupsOf(filteredItems);
+    // 在柜视图只展示仍有库存的物品；耗尽的归入「已消耗」列表
+    final groups = _view == 'stock'
+        ? allGroups.where((g) => g.totalQty > 0).toList()
+        : allGroups.where((g) => g.totalQty <= 0).toList();
 
     return Scaffold(
       appBar: AppBar(title: const Text('用品柜')),
@@ -1047,6 +1040,11 @@ class _SuppliesPageState extends State<SuppliesPage> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: AppSpace.lg, vertical: AppSpace.sm),
                     children: [
+                      _viewChip('stock',
+                          '在柜 ${allGroups.where((g) => g.totalQty > 0).length}'),
+                      _viewChip('used',
+                          '已消耗 ${allGroups.where((g) => g.totalQty <= 0).length}'),
+                      const VerticalDivider(width: AppSpace.lg),
                       _filterChip('all', '全部'),
                       ...kSupplyCategories.keys.map((c) => _filterChip(c,
                           '${supplyCategoryEmoji(c)} ${supplyCategoryLabel(c)}')),
@@ -1055,7 +1053,11 @@ class _SuppliesPageState extends State<SuppliesPage> {
                 ),
                 Expanded(
                   child: groups.isEmpty
-                      ? Center(child: Text('该分类暂无用品', style: AppText.sub))
+                      ? Center(
+                          child: Text(
+                          _view == 'stock' ? '该分类暂无在柜用品' : '该分类暂无已消耗物品',
+                          style: AppText.sub,
+                        ))
                       : ListView.builder(
                           padding: const EdgeInsets.fromLTRB(AppSpace.lg,
                               AppSpace.sm, AppSpace.lg, AppSpace.xl),
@@ -1073,6 +1075,24 @@ class _SuppliesPageState extends State<SuppliesPage> {
     );
   }
 
+  Widget _viewChip(String key, String label) {
+    final selected = _view == key;
+    return Padding(
+      padding: const EdgeInsets.only(right: AppSpace.sm),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: selected,
+        selectedColor: AppColors.primary,
+        labelStyle: TextStyle(
+          color: selected ? Colors.white : AppColors.textSub,
+          fontSize: 12,
+          fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+        ),
+        onSelected: (_) => setState(() => _view = key),
+      ),
+    );
+  }
+
   Widget _summaryHeader() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -1081,7 +1101,10 @@ class _SuppliesPageState extends State<SuppliesPage> {
         padding: const EdgeInsets.all(AppSpace.md),
         child: Row(
           children: [
-            StatTile(label: '在柜品类', value: '${groupsOf(_supplies).length}'),
+            StatTile(
+                label: '在柜品类',
+                value:
+                    '${groupsOf(_supplies).where((g) => g.totalQty > 0).length}'),
             StatTile(label: '累计投入', value: '¥${_totalValue.toStringAsFixed(0)}'),
             StatTile(
               label: '临期/过期',

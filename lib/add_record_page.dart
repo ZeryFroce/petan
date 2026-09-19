@@ -4,16 +4,21 @@ import 'models.dart';
 import 'sync_service.dart';
 import 'widgets/date_picker_sheet.dart';
 
+/// 记一笔：新增 / 编辑健康记录。
+/// 传入 [record] 时为编辑模式：预填全部字段，保存更新原记录；
+/// 新建时可关联用品柜物品，保存后自动扣库存并按单价计入宠物身价。
 class AddRecordPage extends StatefulWidget {
   final String petId;
   final VoidCallback onSaved;
   final String? initialType; // 从首页「记体重」等快捷入口进入时预置类型
+  final HealthRecord? record; // 非空 = 编辑该记录
 
   const AddRecordPage({
     super.key,
     required this.petId,
     required this.onSaved,
     this.initialType,
+    this.record,
   });
 
   @override
@@ -32,19 +37,54 @@ class _AddRecordPageState extends State<AddRecordPage> {
   String? _nextDue;
   String _feedStatus = 'normal'; // feed 类型：食欲
   String? _groomSub; // groom 类型：清洁子类
-  List<Supply> _supplies = []; // 用品柜库存，用于记录消耗
+  List<Supply> _supplies = []; // 用品柜在库物品，用于记录消耗
   Supply? _selectedSupply;
+
+  bool get _isEdit => widget.record != null;
 
   @override
   void initState() {
     super.initState();
     _loadSupplies();
+    _prefill();
   }
+
+  void _prefill() {
+    final r = widget.record;
+    if (r == null) return;
+    _type = r.type;
+    _date = r.recordDate;
+    _nextDue = r.nextDueDate;
+    _title.text = r.title;
+    _vet.text = r.vetName ?? '';
+    _cost.text = r.cost == null ? '' : _trimNum(r.cost!);
+    _weight.text = r.weightKg == null ? '' : _trimNum(r.weightKg!);
+    // notes 含自动追加的「食欲不佳 / 清洁:xx」前缀，尽量还原控件状态
+    String notes = r.notes ?? '';
+    if (r.type == 'feed' && notes.contains('食欲不佳')) {
+      _feedStatus = 'poor';
+      notes = notes.replaceAll('食欲不佳', '').replaceAll('｜', ' ').trim();
+    }
+    if (r.type == 'groom') {
+      final m = RegExp(r'清洁[:：](\S+)').firstMatch(notes);
+      if (m != null) {
+        final label = m.group(1);
+        _groomSub = kGroomLabels.entries
+            .where((e) => e.value == label)
+            .map((e) => e.key)
+            .firstOrNull;
+      }
+    }
+    _notes.text = notes;
+  }
+
+  static String _trimNum(double v) =>
+      v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(1);
 
   Future<void> _loadSupplies() async {
     final list = await DatabaseHelper.instance.getSupplies();
     if (!mounted) return;
-    setState(() => _supplies = list);
+    setState(() => _supplies = list.where((s) => s.quantity > 0).toList());
   }
 
   Future<void> _pick(String? initial, void Function(String) set) async {
@@ -64,51 +104,95 @@ class _AddRecordPageState extends State<AddRecordPage> {
       return;
     }
     String notes = _notes.text.trim();
-    if (_type == 'feed' && _feedStatus == 'poor') {
+    if (_type == 'feed' && _feedStatus == 'poor' && !notes.contains('食欲不佳')) {
       notes = '${notes.isNotEmpty ? '$notes｜' : ''}食欲不佳';
     }
     if (_type == 'groom' && _groomSub != null) {
       notes = '${notes.isNotEmpty ? '$notes｜' : ''}清洁:${kGroomLabels[_groomSub] ?? _groomSub}';
     }
     final supplyQty = double.tryParse(_supplyQty.text.trim());
-    final useSupply = _selectedSupply != null && supplyQty != null && supplyQty > 0;
+    final useSupply = !_isEdit &&
+        _selectedSupply != null &&
+        supplyQty != null &&
+        supplyQty > 0;
     if (useSupply) {
       final s = _selectedSupply!;
       notes = '${notes.isNotEmpty ? '$notes｜' : ''}消耗用品:${s.name} x${supplyQty}${s.unit}';
     }
-    final rec = HealthRecord(
-      id: genId(),
-      petId: widget.petId,
-      type: _type,
-      title: title,
-      recordDate: _date,
-      vetName: _vet.text.trim(),
-      cost: _cost.text.isEmpty ? null : double.tryParse(_cost.text),
-      weightKg: _type == 'weight' && _weight.text.isNotEmpty ? double.tryParse(_weight.text) : null,
-      notes: notes,
-      nextDueDate: _nextDue,
-      createdAt: DateTime.now().millisecondsSinceEpoch,
-    );
-    await DatabaseHelper.instance.insertRecord(rec);
-    if (useSupply) {
-      await DatabaseHelper.instance.consumeSupply(
-        _selectedSupply!.id,
-        supplyQty!,
-        recordId: rec.id,
-        date: _date,
-        note: '记录：$title',
-      );
-    }
-    if (_nextDue != null) {
-      await DatabaseHelper.instance.insertReminder(Reminder(
+
+    if (_isEdit) {
+      final r = widget.record!;
+      await DatabaseHelper.instance.updateRecord(HealthRecord(
+        id: r.id,
+        petId: r.petId,
+        type: _type,
+        title: title,
+        recordDate: _date,
+        vetName: _vet.text.trim(),
+        cost: _cost.text.isEmpty ? null : double.tryParse(_cost.text),
+        weightKg: _type == 'weight' && _weight.text.isNotEmpty
+            ? double.tryParse(_weight.text)
+            : null,
+        notes: notes,
+        attachments: r.attachments,
+        nextDueDate: _nextDue,
+        reminderId: r.reminderId,
+        createdAt: r.createdAt,
+      ));
+      // 到期日变更：重建关联提醒
+      if (r.reminderId != null) {
+        await DatabaseHelper.instance.deleteReminder(r.reminderId!);
+      }
+      if (_nextDue != null) {
+        await DatabaseHelper.instance.insertReminder(Reminder(
+          id: genId(),
+          petId: r.petId,
+          title: '${recordTypeLabel(_type)}: $title',
+          dueDate: _nextDue!,
+          type: _type,
+          sourceRecordId: r.id,
+          createdAt: DateTime.now().millisecondsSinceEpoch,
+        ));
+      }
+    } else {
+      final rec = HealthRecord(
         id: genId(),
         petId: widget.petId,
-        title: '${recordTypeLabel(_type)}: $title',
-        dueDate: _nextDue!,
         type: _type,
-        sourceRecordId: rec.id,
+        title: title,
+        recordDate: _date,
+        vetName: _vet.text.trim(),
+        cost: _cost.text.isEmpty ? null : double.tryParse(_cost.text),
+        weightKg: _type == 'weight' && _weight.text.isNotEmpty
+            ? double.tryParse(_weight.text)
+            : null,
+        notes: notes,
+        nextDueDate: _nextDue,
         createdAt: DateTime.now().millisecondsSinceEpoch,
-      ));
+      );
+      await DatabaseHelper.instance.insertRecord(rec);
+      if (useSupply) {
+        // 消耗自动扣库存；公共用品会按入库单价计价并计入该宠物身价
+        await DatabaseHelper.instance.consumeSupply(
+          _selectedSupply!.id,
+          supplyQty!,
+          recordId: rec.id,
+          date: _date,
+          note: '记录：$title',
+          petId: widget.petId,
+        );
+      }
+      if (_nextDue != null) {
+        await DatabaseHelper.instance.insertReminder(Reminder(
+          id: genId(),
+          petId: widget.petId,
+          title: '${recordTypeLabel(_type)}: $title',
+          dueDate: _nextDue!,
+          type: _type,
+          sourceRecordId: rec.id,
+          createdAt: DateTime.now().millisecondsSinceEpoch,
+        ));
+      }
     }
     widget.onSaved();
     SyncService.syncIfAuto();
@@ -118,7 +202,7 @@ class _AddRecordPageState extends State<AddRecordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('添加记录')),
+      appBar: AppBar(title: Text(_isEdit ? '编辑记录' : '添加记录')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -183,13 +267,14 @@ class _AddRecordPageState extends State<AddRecordPage> {
               onChanged: (v) => setState(() => _groomSub = v),
             ),
           ],
-          if (_supplies.isNotEmpty) ...[
+          // 用品消耗仅在新建时可选（编辑不重复扣库存）
+          if (!_isEdit && _supplies.isNotEmpty) ...[
             const SizedBox(height: 12),
             DropdownButtonFormField<Supply?>(
               value: _selectedSupply,
               decoration: const InputDecoration(
                 labelText: '消耗用品（可选）',
-                helperText: '选择后填写消耗数量，保存时自动扣减用品柜库存',
+                helperText: '仅显示有库存的物品；保存时自动扣库存并按单价计入身价',
               ),
               hint: Text('不关联用品'),
               items: [
@@ -206,7 +291,7 @@ class _AddRecordPageState extends State<AddRecordPage> {
               onChanged: (v) => setState(() => _selectedSupply = v),
             ),
           ],
-          if (_selectedSupply != null) ...[
+          if (!_isEdit && _selectedSupply != null) ...[
             const SizedBox(height: 12),
             TextField(
               controller: _supplyQty,
@@ -223,7 +308,7 @@ class _AddRecordPageState extends State<AddRecordPage> {
           const SizedBox(height: 12),
           TextField(controller: _notes, maxLines: 3, decoration: const InputDecoration(labelText: '备注')),
           const SizedBox(height: 24),
-          SizedBox(width: double.infinity, child: FilledButton(onPressed: _save, child: Text('保存'))),
+          SizedBox(width: double.infinity, child: FilledButton(onPressed: _save, child: Text(_isEdit ? '保存修改' : '保存'))),
         ],
       ),
     );

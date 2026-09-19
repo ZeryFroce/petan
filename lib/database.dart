@@ -327,7 +327,11 @@ class DatabaseHelper {
   }
 
   /// 消耗：写流水 + 库存扣减（事务，库存不足时按剩余量扣）
-  /// [petId] 可选：本次消耗关联的宠物
+  ///
+  /// 身价归集规则（避免重复计算）：
+  /// - 入库时已关联宠物 → 购买金额已计入该宠物，消耗不再计价；
+  /// - 入库均未关联（公共用品）→ 消耗时选择宠物后，按「历史入库总额 ÷ 总入库量」
+  ///   的单价 × 消耗量写入流水 price，计入该宠物身价与消费记录。
   Future<void> consumeSupply(String supplyId, double qty,
       {String? recordId, String? date, String? note, String? petId}) async {
     final d = await database;
@@ -337,12 +341,34 @@ class DatabaseHelper {
       final stock = (rows.first['quantity'] as num?)?.toDouble() ?? 0;
       final used = qty > stock ? stock : qty;
       if (used <= 0) return;
+
+      // 计算归属：仅当该用品的历史入库均未关联宠物时，消耗才计价
+      double? price;
+      if (petId != null) {
+        final ins = await txn.query('supply_logs',
+            where: 'supplyId=? AND type=?', whereArgs: [supplyId, 'in']);
+        bool purchaseAttributed = false;
+        double totalQty = 0;
+        double totalPrice = 0;
+        for (final r in ins) {
+          final q = (r['qty'] as num?)?.toDouble() ?? 0;
+          final p = (r['price'] as num?)?.toDouble() ?? 0;
+          totalQty += q;
+          totalPrice += p;
+          if (r['petId'] != null) purchaseAttributed = true;
+        }
+        if (!purchaseAttributed && totalQty > 0 && totalPrice > 0) {
+          price = totalPrice / totalQty * used;
+        }
+      }
+
       await txn.insert('supply_logs', SupplyLog(
         id: genId(),
         supplyId: supplyId,
         type: 'out',
         qty: used,
         date: date ?? DateTime.now().toIso8601String().substring(0, 10),
+        price: price,
         note: note,
         recordId: recordId,
         petId: petId,

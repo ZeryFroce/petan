@@ -82,10 +82,12 @@ class _PetDetailPageState extends State<PetDetailPage>
 
   double get _equipCost => _equipments.fold(0, (s, e) => s + e.price);
 
-  /// 用品花费：入库时关联到该宠物的金额合计
-  double get _supplyCost => _supplyLogs
-      .where((l) => l.type == 'in')
-      .fold(0, (s, l) => s + (l.price ?? 0));
+  /// 用品花费：入库关联金额 + 公共用品消耗计价金额
+  /// （数据库层保证两者不重复计：入库已关联则消耗不再计价）
+  double get _supplyCost => _supplyLogs.fold(
+      0,
+      (s, l) =>
+          s + ((l.type == 'in' || l.price != null) ? (l.price ?? 0) : 0));
 
   double get _worth => _recordsCost + _equipCost + _supplyCost;
 
@@ -620,8 +622,8 @@ class _PetDetailPageState extends State<PetDetailPage>
           await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) =>
-                  AddRecordPage(petId: _pet.id, onSaved: _load, initialType: r.type),
+              builder: (_) => AddRecordPage(
+                  petId: _pet.id, onSaved: _load, record: r),
             ),
           );
           _load();
@@ -964,10 +966,17 @@ class _PetDetailPageState extends State<PetDetailPage>
       catSums['equipment'] = (catSums['equipment'] ?? 0) + e.price;
     }
     for (final l in _supplyLogs) {
-      if (l.type != 'in' || l.price == null) continue;
-      final d = DateTime.tryParse(l.date);
-      if (!inRange(d)) continue;
-      catSums['supplies'] = (catSums['supplies'] ?? 0) + l.price!;
+      if (l.type == 'in') {
+        if (l.price == null) continue;
+        final d = DateTime.tryParse(l.date);
+        if (!inRange(d)) continue;
+        catSums['supplies'] = (catSums['supplies'] ?? 0) + l.price!;
+      } else if (l.price != null) {
+        // 公共用品消耗计价（数据库层避免与入库重复计算）
+        final d = DateTime.tryParse(l.date);
+        if (!inRange(d)) continue;
+        catSums['supplies'] = (catSums['supplies'] ?? 0) + l.price!;
+      }
     }
     final rangeTotal = catSums.values.fold(0.0, (s, v) => s + v);
 
