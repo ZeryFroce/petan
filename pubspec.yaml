@@ -1,7 +1,7 @@
 name: pet_health_app
 description: 宠安 - 猫狗健康医疗档案（本地优先，支持离线备份）
 publish_to: 'none'
-version: 1.11.0+111
+version: 1.12.0+112
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
