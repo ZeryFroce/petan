@@ -78,7 +78,7 @@ CHANGELOG="$PROJECT_DIR/CHANGELOG.md"
 ENTRY="## v$NEW — $NOW
 - 版本号: v$NEW (versionCode $CODE)
 - 更新内容: $MSG
-- 产物: GitHub Releases（本地: $DST）
+- 产物: GitHub Releases
 "
 if [ ! -f "$CHANGELOG" ]; then
   printf "# 更新日志 / Changelog\n\n自动构建产出，版本号格式 X.XX；每条记录构建时间、版本与更新内容。\n" > "$CHANGELOG"
@@ -93,6 +93,12 @@ if [ -n "$INSERT_LINE" ]; then
   } > "$CHANGELOG.tmp" && mv "$CHANGELOG.tmp" "$CHANGELOG"
 else
   printf "\n%s\n" "$ENTRY" >> "$CHANGELOG"
+fi
+
+# 校验 CHANGELOG 必须是合法 UTF-8（此前坏字节导致 GitHub 页面乱码）
+if ! python3 -c "import sys;open(sys.argv[1],'rb').read().decode('utf-8')" "$CHANGELOG" 2>/dev/null; then
+  echo "CHANGELOG_WARN CHANGELOG.md 不是合法 UTF-8，已中止同步，请先修复编码"
+  exit 1
 fi
 
 echo "BUILD_OK $DST"
